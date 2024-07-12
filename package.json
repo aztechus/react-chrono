@@ -1,15 +1,15 @@
 {
-  "name": "react-chrono",
-  "version": "2.6.1",
+  "name": "aztech-react-chrono",
+  "version": "2.6.2",
   "license": "MIT",
-  "description": "A Modern Timeline component for React",
+  "description": "A Modern Timeline component for React - Modified for A View From Experience",
   "keywords": [
     "timeline",
     "react-timeline",
     "horizontal-timeline",
     "vertical-timeline"
   ],
-  "author": "Prabhu Murthy",
+  "author": "Geraldo Gonzalez",
   "repository": {
     "url": "https://github.com/prabhuignoto/react-chrono",
     "type": "git"
