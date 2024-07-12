@@ -27,7 +27,7 @@ const Toolbar: FunctionComponent<ToolbarProps> = ({
   theme,
 }) => {
   return (
-    <ToolbarWrapper theme={theme}>
+    <ToolbarWrapper className={`toolbar-wrapper`} theme={theme}>
       {items?.map(({ label, id, icon }, index) => {
         return (
           <ToolbarListItem aria-label={label} key={id}>

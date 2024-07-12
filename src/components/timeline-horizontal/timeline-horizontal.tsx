@@ -62,7 +62,7 @@ const TimelineHorizontal: React.FunctionComponent<TimelineHorizontalModel> = ({
 
   return (
     <TimelineHorizontalWrapper
-      className={wrapperClass}
+      className={`${wrapperClass}`}
       flipLayout={flipLayout}
       data-testid="timeline-collection"
     >

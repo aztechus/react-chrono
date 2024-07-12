@@ -98,7 +98,10 @@ const TimelineToolbar: FunctionComponent<TimelineToolbarProps> = ({
 
   // Render the TimelineToolbar component
   return (
-    <Toolbar items={toolbarItems} theme={theme}>
+    <Toolbar 
+      items={toolbarItems} 
+      theme={theme}
+      >
       <Controls
         disableLeft={disableLeft}
         disableRight={disableRight}
@@ -119,7 +122,7 @@ const TimelineToolbar: FunctionComponent<TimelineToolbarProps> = ({
         $slideShowRunning={slideShowRunning}
         key="timeline-extra-controls"
       >
-        <ExtraControlChild key="quick-jump">
+        <ExtraControlChild className={`quick-jump`} key="quick-jump">
           {enableQuickJump ? (
             <QuickJump
               activeItem={activeTimelineItem}
@@ -137,7 +140,7 @@ const TimelineToolbar: FunctionComponent<TimelineToolbarProps> = ({
             />
           ) : null}
         </ExtraControlChild>
-        <ExtraControlChild key="layout-switcher">
+        <ExtraControlChild className={`layout-switcher`} key="layout-switcher">
           {!cardLess && enableLayoutSwitch ? (
             <LayoutSwitcher
               isDarkMode={darkMode}
@@ -150,7 +153,7 @@ const TimelineToolbar: FunctionComponent<TimelineToolbarProps> = ({
           ) : null}
         </ExtraControlChild>
         {canShowDensity ? (
-          <ExtraControlChild key="change-density">
+          <ExtraControlChild className={`change-density`} key="change-density">
             <ChangeDensity
               isDarkMode={darkMode}
               theme={theme}

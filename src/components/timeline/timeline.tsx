@@ -334,7 +334,7 @@ const Timeline: React.FunctionComponent<TimelineModel> = (
   return (
     <Wrapper
       onKeyDown={handleKeyDown}
-      className={wrapperClass}
+      className={`${wrapperClass}`}
       cardPositionHorizontal={cardPositionHorizontal}
       onMouseDown={() => {
         setHasFocus(true);
