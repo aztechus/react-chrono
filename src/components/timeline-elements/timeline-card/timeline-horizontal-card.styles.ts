@@ -123,6 +123,21 @@ export const TimelineTitleContainer = styled.div`
   }
 `;
 
+export const TimelineDescriptionContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+
+  &.vertical {
+    margin-bottom: 1em;
+  }
+
+  &.horizontal {
+    position: absolute;
+    top: 70%;
+  }
+`;
+
 export const TimelineContentContainer = styled.div<{
   $active?: boolean;
   $cardWidth?: number;

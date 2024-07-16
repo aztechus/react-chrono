@@ -16,6 +16,7 @@ import {
   ShapeWrapper,
   TimelineContentContainer,
   TimelineTitleContainer,
+  TimelineDescriptionContainer,
   Wrapper,
 } from './timeline-horizontal-card.styles';
 
@@ -179,7 +180,7 @@ const TimelineCard: React.FunctionComponent<TimelineCardModel> = ({
       </ShapeWrapper>
 
       <TimelineTitleContainer
-        className={titleClass}
+        className={`${titleClass} `}
         data-testid="timeline-title"
       >
         <TimelineItemTitle
@@ -189,6 +190,15 @@ const TimelineCard: React.FunctionComponent<TimelineCardModel> = ({
           classString={classNames?.title}
         />
       </TimelineTitleContainer>
+      <TimelineDescriptionContainer
+        className={`${titleClass}`}
+      >
+        <p
+          className={``}
+        >
+          {cardDetailedText[0]?.substring(0, 100)}
+        </p>
+      </TimelineDescriptionContainer>
     </Wrapper>
   );
 };

@@ -25,33 +25,29 @@ import {
   Wrapper,
 } from './timeline.style';
 
-const Timeline: React.FunctionComponent<TimelineModel> = (
-  props: TimelineModel,
-) => {
-  // de-structure the props
-  const {
-    activeTimelineItem,
-    contentDetailsChildren,
-    iconChildren,
-    items = [],
-    onFirst,
-    onLast,
-    onNext,
-    onPrevious,
-    onRestartSlideshow,
-    onTimelineUpdated,
-    onItemSelected,
-    onOutlineSelection,
-    slideShowEnabled,
-    slideShowRunning,
-    mode = 'HORIZONTAL',
-    nestedCardHeight,
-    isChild = false,
-    onPaused,
-    uniqueId,
-    noUniqueId,
-  } = props;
-
+const Timeline: React.FC<TimelineModel> = ({
+  activeTimelineItem,
+  contentDetailsChildren,
+  iconChildren,
+  items = [],
+  onFirst,
+  onLast,
+  onNext,
+  onPrevious,
+  onRestartSlideshow,
+  onTimelineUpdated,
+  onItemSelected,
+  onOutlineSelection,
+  slideShowEnabled,
+  slideShowRunning,
+  mode = 'HORIZONTAL',
+  nestedCardHeight,
+  isChild = false,
+  onPaused,
+  uniqueId,
+  noUniqueId,
+  ...rest
+}) => {
   const {
     cardPositionHorizontal,
     disableNavOnKey,
@@ -80,7 +76,6 @@ const Timeline: React.FunctionComponent<TimelineModel> = (
 
   const activeItemIndex = useRef<number>(activeTimelineItem);
 
-  // reference to the timeline
   const timelineMainRef = useRef<HTMLDivElement>(null);
 
   const canScrollTimeline = useMemo(() => {
@@ -99,7 +94,6 @@ const Timeline: React.FunctionComponent<TimelineModel> = (
     `react-chrono-timeline-${noUniqueId ? uniqueId : getUniqueID()}`,
   );
 
-  // handlers for navigation
   const handleNext = useCallback(() => {
     if (hasFocus) {
       activeItemIndex.current = Math.min(
@@ -131,7 +125,6 @@ const Timeline: React.FunctionComponent<TimelineModel> = (
     }
   }, [hasFocus, onLast]);
 
-  // handler for keyboard navigation
   const handleKeySelection = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       const { key } = event;
@@ -183,7 +176,6 @@ const Timeline: React.FunctionComponent<TimelineModel> = (
     }
 
     if (items.length && activeItem) {
-      // const item = items[activeItem];
       const { title, cardTitle, cardSubtitle, cardDetailedText } = activeItem;
       onItemSelected?.({
         cardDetailedText,
@@ -236,18 +228,30 @@ const Timeline: React.FunctionComponent<TimelineModel> = (
   }, [newOffSet]);
 
   useEffect(() => {
+    const ele = timelineMainRef.current;
+    if (!ele) {
+      return;
+    }
+    if (mode === 'HORIZONTAL') {
+      ele.scrollLeft = Math.max(newOffSet, 0);
+    } else {
+      ele.scrollTop = newOffSet;
+    }
+  }, [newOffSet]);
+
+  useEffect(() => {
+    const ele = timelineMainRef.current;
+    if (!ele) {
+      return;
+    }
     // setup observer for the timeline elements
     setTimeout(() => {
-      const element = timelineMainRef.current;
-
-      if (element) {
-        const childElements = element.querySelectorAll('.vertical-item-row');
-        Array.from(childElements).forEach((elem) => {
-          if (observer.current) {
-            observer.current.observe(elem);
-          }
-        });
-      }
+      const childElements = ele.querySelectorAll('.vertical-item-row');
+      Array.from(childElements).forEach((elem) => {
+        if (observer.current) {
+          observer.current.observe(elem);
+        }
+      });
     }, 0);
 
     const toggleMedia = (elem: HTMLElement, state: string) => {
@@ -344,6 +348,7 @@ const Timeline: React.FunctionComponent<TimelineModel> = (
           onPaused?.();
         }
       }}
+      {...rest}
     >
       {canShowToolbar ? (
         <ToolbarWrapper position={toolbarPosition}>
