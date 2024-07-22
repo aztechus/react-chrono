@@ -28,11 +28,14 @@ const show = keyframes`
 
 export const ShapeWrapper = styled.div`
   /* height: 100%; */
+  position: absolute;
+  z-index: 2;
+  left: -2%;
   align-items: center;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: 5em;
+  width: auto;
 `;
 
 type ShapeModel = {
@@ -112,6 +115,7 @@ export const TimelineTitleContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  z-index: 2;
 
   &.vertical {
     margin-bottom: 1em;
@@ -120,6 +124,7 @@ export const TimelineTitleContainer = styled.div`
   &.horizontal {
     position: absolute;
     top: 0;
+    left: 0%;
   }
 `;
 
@@ -161,5 +166,21 @@ export const TimelineContentContainer = styled.div<{
     width: calc(100% - 5em);
     margin-left: auto;
     flex-direction: column;
+  }
+`;
+
+export const TitleBar = styled.div<{
+
+}>`
+  position: absolute;
+  width: 1px;
+  background: black;
+  height: 50%;
+  left: 1px;
+  z-index: 1;
+  top: 2px;
+
+  &.vertical {
+    justify-content: flex-start;
   }
 `;

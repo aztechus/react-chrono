@@ -15,9 +15,10 @@ export const TitleWrapper = styled.div<{
   visibility: ${(p) => (p.$hide ? 'hidden' : 'visible')};
   text-align: ${(p) => (p.align ? p.align : '')};
   color: ${(p) => (p.theme ? p.theme.titleColor : '')};
+  background: black;
 
   &.active {
-    background: ${(p) => p.theme?.secondary};
+    // background: ${(p) => p.theme?.secondary};
     color: ${(p) =>
       p.theme?.titleColorActive ? p.theme?.titleColorActive : p.theme?.primary};
   }

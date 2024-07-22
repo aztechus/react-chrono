@@ -18,6 +18,7 @@ import {
   TimelineTitleContainer,
   TimelineDescriptionContainer,
   Wrapper,
+  TitleBar,
 } from './timeline-horizontal-card.styles';
 
 const TimelineCard: React.FunctionComponent<TimelineCardModel> = ({
@@ -190,6 +191,7 @@ const TimelineCard: React.FunctionComponent<TimelineCardModel> = ({
           classString={classNames?.title}
         />
       </TimelineTitleContainer>
+      <TitleBar/>
       <TimelineDescriptionContainer
         className={`${titleClass}`}
       >
