@@ -27,76 +27,59 @@ const Chrono: React.FunctionComponent<Partial<TimelineProps>> = (
   const [slideShowActive, setSlideShowActive] = useState(false);
   const [activeTimelineItem, setActiveTimelineItem] = useState(activeItemIndex);
 
-  const initItems = (lineItems?: TimelineItemModel[]): TimelineItemModel[] => {
-    if (lineItems?.length) {
-      return lineItems.map((item, index) => {
-        const id = getUniqueID();
+  const updateTimelineItems = useCallback((newItems?: TimelineItemModel[]) => {
+    if (newItems) {
+      timeLineItemsRef.current = newItems;
+      setTimeLineItems(newItems);
+      setActiveTimelineItem(0);
+    } else {
+      const itemLength = toReactArray(children).filter(
+        (item) => (item as React.ReactElement).props.className !== 'chrono-icons',
+      ).length;
 
-        return {
-          ...item,
-          _dayjs: dayjs(item.date),
-          active: index === activeItemIndex,
-          id,
-          items: item.items?.map((subItem) => ({
-            ...subItem,
-            _dayjs: dayjs(subItem.date),
-            id: getUniqueID(),
-            isNested: true,
-            visible: true,
-          })),
-          title: item.date
-            ? dayjs(item.date).format(titleDateFormat)
-            : item.title,
-          visible: true,
-        };
-      });
-    }
-
-    const itemLength = React.Children.toArray(children).filter(
-      (item) => (item as React.ReactElement).props.className !== 'chrono-icons',
-    ).length;
-
-    return Array.from({ length: itemLength }).map((_, index) => ({
-      active: index === activeItemIndex,
-      id: getUniqueID(),
-      visible: true,
-    }));
-  };
-
-  const updateItems = (lineItems: TimelineItemModel[]) => {
-    if (lineItems) {
-      const pos = timeLineItems.length;
-
-      return lineItems.map((item, index) => ({
-        ...item,
-        active: index === pos,
+      const newItems = Array.from({ length: itemLength }).map((_, index) => ({
+        active: index === activeItemIndex,
+        id: getUniqueID(),
         visible: true,
       }));
-    } else {
-      return [];
+
+      timeLineItemsRef.current = newItems;
+      setTimeLineItems(newItems);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const _items = items?.filter((item) => item);
-    let newItems: TimelineItemModel[] = [];
 
     if (!_items?.length) {
-      const lineItems = initItems();
-      setTimeLineItems(lineItems);
+      updateTimelineItems();
       return;
     }
 
     if (timeLineItems.length && _items.length > timeLineItems.length) {
-      newItems = updateItems(_items);
-    } else if (_items.length) {
-      newItems = initItems(_items);
-    }
-
-    if (newItems.length) {
-      timeLineItemsRef.current = newItems;
-      setTimeLineItems(newItems);
-      setActiveTimelineItem(0);
+      updateTimelineItems(_items.map((item, index) => ({
+        ...item,
+        active: index === timeLineItems.length,
+        visible: true,
+      })));
+    } else {
+      updateTimelineItems(_items.map((item, index) => ({
+        ...item,
+        _dayjs: dayjs(item.date),
+        active: index === activeItemIndex,
+        id: getUniqueID(),
+        items: item.items?.map((subItem) => ({
+          ...subItem,
+          _dayjs: dayjs(subItem.date),
+          id: getUniqueID(),
+          isNested: true,
+          visible: true,
+        })),
+        title: item.date
+          ? dayjs(item.date).format(titleDateFormat)
+          : item.title,
+        visible: true,
+      })));
     }
   }, [JSON.stringify(allowDynamicUpdate ? items : null)]);
 

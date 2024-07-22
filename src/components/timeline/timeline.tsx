@@ -94,80 +94,88 @@ const Timeline: React.FC<TimelineModel> = ({
     `react-chrono-timeline-${noUniqueId ? uniqueId : getUniqueID()}`,
   );
 
-  const handleNext = useCallback(() => {
-    if (hasFocus) {
-      activeItemIndex.current = Math.min(
-        activeItemIndex.current + 1,
-        items.length - 1,
-      );
-      onNext?.();
-    }
-  }, [hasFocus, onNext]);
-
-  const handlePrevious = useCallback(() => {
-    if (hasFocus) {
-      activeItemIndex.current = Math.max(activeItemIndex.current - 1, 0);
-      onPrevious?.();
-    }
-  }, [hasFocus, onPrevious]);
-
-  const handleFirst = useCallback(() => {
-    if (hasFocus) {
-      activeItemIndex.current = 0;
-      onFirst?.();
-    }
-  }, [hasFocus, onFirst]);
-
-  const handleLast = useCallback(() => {
-    if (hasFocus) {
-      activeItemIndex.current = items.length - 1;
-      onLast?.();
-    }
-  }, [hasFocus, onLast]);
+  // Combined navigation handlers
+  const handleNavigation = useCallback(
+    (direction: 'next' | 'previous' | 'first' | 'last') => {
+      if (hasFocus) {
+        switch (direction) {
+          case 'next':
+            activeItemIndex.current = Math.min(
+              activeItemIndex.current + 1,
+              items.length - 1,
+            );
+            onNext?.();
+            break;
+          case 'previous':
+            activeItemIndex.current = Math.max(
+              activeItemIndex.current - 1,
+              0,
+            );
+            onPrevious?.();
+            break;
+          case 'first':
+            activeItemIndex.current = 0;
+            onFirst?.();
+            break;
+          case 'last':
+            activeItemIndex.current = items.length - 1;
+            onLast?.();
+            break;
+          default:
+            break;
+        }
+      }
+    },
+    [hasFocus, onNext, onPrevious, onFirst, onLast],
+  );
 
   const handleKeySelection = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       const { key } = event;
 
       if (mode === 'HORIZONTAL' && key === 'ArrowRight') {
-        flipLayout ? handlePrevious() : handleNext();
+        flipLayout ? handleNavigation('previous') : handleNavigation('next');
       } else if (mode === 'HORIZONTAL' && key === 'ArrowLeft') {
-        flipLayout ? handleNext() : handlePrevious();
+        flipLayout ? handleNavigation('next') : handleNavigation('previous');
       } else if (
         (mode === 'VERTICAL' || mode === 'VERTICAL_ALTERNATING') &&
         key === 'ArrowDown'
       ) {
-        handleNext();
+        handleNavigation('next');
       } else if (
         (mode === 'VERTICAL' || mode === 'VERTICAL_ALTERNATING') &&
         key === 'ArrowUp'
       ) {
-        handlePrevious();
+        handleNavigation('previous');
       } else if (key === 'Home') {
-        handleFirst();
+        handleNavigation('first');
       } else if (key === 'End') {
-        handleLast();
+        handleNavigation('last');
       }
     },
-    [handleNext, handlePrevious, handleLast],
+    [handleNavigation, mode, flipLayout],
   );
 
-  const handleTimelineItemClick = (itemId?: string, isSlideShow?: boolean) => {
-    if (itemId) {
-      for (let idx = 0; idx < items.length; idx++) {
-        if (items[idx].id === itemId) {
-          activeItemIndex.current = idx;
-          if (isSlideShow && idx < items.length - 1) {
-            onTimelineUpdated?.(idx + 1);
-          } else {
-            onTimelineUpdated?.(idx);
+  const handleTimelineItemClick = useCallback(
+    (itemId?: string, isSlideShow?: boolean) => {
+      if (itemId) {
+        for (let idx = 0; idx < items.length; idx++) {
+          if (items[idx].id === itemId) {
+            activeItemIndex.current = idx;
+            if (isSlideShow && idx < items.length - 1) {
+              onTimelineUpdated?.(idx + 1);
+            } else {
+              onTimelineUpdated?.(idx);
+            }
+            break;
           }
-          break;
         }
       }
-    }
-  };
+    },
+    [items, onTimelineUpdated],
+  );
 
+  // Combined effect for initial setup and updates
   useEffect(() => {
     const activeItem = items[activeTimelineItem || 0];
 
@@ -206,14 +214,7 @@ const Timeline: React.FC<TimelineModel> = ({
         }
       }
     }
-  }, [activeTimelineItem, items.length, slideShowRunning]);
-
-  const handleScroll = (scroll: Partial<Scroll>) => {
-    const element = timelineMainRef.current;
-    if (element) {
-      setNewOffset(element, scroll);
-    }
-  };
+  }, [activeTimelineItem, items.length, slideShowRunning, onItemSelected]);
 
   useEffect(() => {
     const ele = timelineMainRef.current;
@@ -225,19 +226,7 @@ const Timeline: React.FC<TimelineModel> = ({
     } else {
       ele.scrollTop = newOffSet;
     }
-  }, [newOffSet]);
-
-  useEffect(() => {
-    const ele = timelineMainRef.current;
-    if (!ele) {
-      return;
-    }
-    if (mode === 'HORIZONTAL') {
-      ele.scrollLeft = Math.max(newOffSet, 0);
-    } else {
-      ele.scrollTop = newOffSet;
-    }
-  }, [newOffSet]);
+  }, [newOffSet, mode]);
 
   useEffect(() => {
     const ele = timelineMainRef.current;
@@ -259,8 +248,8 @@ const Timeline: React.FC<TimelineModel> = ({
         .querySelectorAll('img,video')
         .forEach(
           (ele) =>
-            ((ele as HTMLElement).style.visibility =
-              state === 'hide' ? 'hidden' : 'visible'),
+          ((ele as HTMLElement).style.visibility =
+            state === 'hide' ? 'hidden' : 'visible'),
         );
     };
 
@@ -297,8 +286,17 @@ const Timeline: React.FC<TimelineModel> = ({
         observer.current.disconnect();
       }
     };
-    // eslint-disable-next-line
-  }, []);
+  }, [mode]);
+
+  const handleScroll = useCallback(
+    (scroll: Partial<Scroll>) => {
+      const element = timelineMainRef.current;
+      if (element) {
+        setNewOffset(element, scroll);
+      }
+    },
+    [],
+  );
 
   const handleKeyDown = useCallback(
     (evt: React.KeyboardEvent<HTMLDivElement>) => {
@@ -310,19 +308,22 @@ const Timeline: React.FC<TimelineModel> = ({
     [disableNavOnKey, slideShowRunning, handleKeySelection],
   );
 
-  const handleTimelineUpdate = useCallback((mode: string) => {
-    if (mode === 'VERTICAL') {
-      setTimelineMode('VERTICAL');
-    } else if (mode === 'HORIZONTAL') {
-      setTimelineMode('HORIZONTAL');
-      updateHorizontalAllCards?.(false);
-    } else if (mode === 'VERTICAL_ALTERNATING') {
-      setTimelineMode('VERTICAL_ALTERNATING');
-    } else if (mode === 'HORIZONTAL_ALL') {
-      setTimelineMode('HORIZONTAL_ALL');
-      updateHorizontalAllCards?.(true);
-    }
-  }, []);
+  const handleTimelineUpdate = useCallback(
+    (mode: string) => {
+      if (mode === 'VERTICAL') {
+        setTimelineMode('VERTICAL');
+      } else if (mode === 'HORIZONTAL') {
+        setTimelineMode('HORIZONTAL');
+        updateHorizontalAllCards?.(false);
+      } else if (mode === 'VERTICAL_ALTERNATING') {
+        setTimelineMode('VERTICAL_ALTERNATING');
+      } else if (mode === 'HORIZONTAL_ALL') {
+        setTimelineMode('HORIZONTAL_ALL');
+        updateHorizontalAllCards?.(true);
+      }
+    },
+    [updateHorizontalAllCards],
+  );
 
   const wrapperClass = useMemo(() => {
     return cls(mode.toLocaleLowerCase(), {
@@ -333,7 +334,7 @@ const Timeline: React.FC<TimelineModel> = ({
 
   const canShowToolbar = useMemo(() => {
     return !disableToolbar && !isChild;
-  }, [isChild, disableToolbar]);
+  }, [disableToolbar, isChild]);
 
   return (
     <Wrapper
@@ -357,10 +358,10 @@ const Timeline: React.FC<TimelineModel> = ({
             totalItems={items.length}
             slideShowEnabled={slideShowEnabled}
             slideShowRunning={slideShowRunning}
-            onFirst={handleFirst}
-            onLast={handleLast}
-            onNext={handleNext}
-            onPrevious={handlePrevious}
+            onFirst={() => handleNavigation('first')}
+            onLast={() => handleNavigation('last')}
+            onNext={() => handleNavigation('next')}
+            onPrevious={() => handleNavigation('previous')}
             onRestartSlideshow={onRestartSlideshow}
             darkMode={darkMode}
             toggleDarkMode={toggleDarkMode}
@@ -468,8 +469,6 @@ const Timeline: React.FC<TimelineModel> = ({
           />
         ) : null}
       </TimelineMainWrapper>
-
-      {/* placeholder to render timeline content for horizontal mode */}
       <TimelineContentRender
         id={id.current}
         $showAllCards={showAllCardsHorizontal}

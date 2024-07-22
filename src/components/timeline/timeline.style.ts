@@ -61,6 +61,7 @@ export const TimelineMainWrapper = styled.div<{
 export const TimelineMain = styled.div`
   position: absolute;
   top: 50%;
+  min-width: 100%;
   left: 0;
   display: flex;
   align-items: center;

@@ -196,7 +196,7 @@ const TimelineCard: React.FunctionComponent<TimelineCardModel> = ({
         <p
           className={``}
         >
-          {cardDetailedText[0]?.substring(0, 100)}
+          {cardDetailedText?.length > 0 && cardDetailedText[0]?.substring(0, 100)}
         </p>
       </TimelineDescriptionContainer>
     </Wrapper>
