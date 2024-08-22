@@ -74,43 +74,39 @@ const Timeline: React.FC<TimelineModel> = ({
     mode === 'HORIZONTAL' && showAllCardsHorizontal ? 'HORIZONTAL_ALL' : mode,
   );
 
-  const activeItemIndex = useRef<number>(activeTimelineItem);
+  const [isInitialRender, setIsInitialRender] = useState(true);
 
+  useEffect(() => {
+    if (isInitialRender) {
+      setIsInitialRender(false);
+    }
+  }, [isInitialRender]);
+
+  const activeItemIndex = useRef<number>(activeTimelineItem);
   const timelineMainRef = useRef<HTMLDivElement>(null);
 
-  const canScrollTimeline = useMemo(() => {
-    if (!slideShowRunning) {
-      if (typeof scrollable === 'boolean') {
-        return scrollable;
-      }
-
-      if (typeof scrollable === 'object' && scrollable.scrollbar) {
-        return scrollable.scrollbar;
-      }
-    }
-  }, [slideShowRunning, scrollable]);
-
-  const id = useRef(
-    `react-chrono-timeline-${noUniqueId ? uniqueId : getUniqueID()}`,
+  // Memoized ID for the timeline
+  const timelineId = useMemo(
+    () => `react-chrono-timeline-${noUniqueId ? uniqueId : getUniqueID()}`,
+    [uniqueId, noUniqueId],
   );
 
-  // Combined navigation handlers
+  // Memoized calculation for whether the timeline can scroll
+  const canScrollTimeline = useMemo(() => {
+    return !slideShowRunning && (typeof scrollable === 'boolean' ? scrollable : scrollable?.scrollbar);
+  }, [slideShowRunning, scrollable]);
+
+  // useCallback for combined navigation handlers
   const handleNavigation = useCallback(
     (direction: 'next' | 'previous' | 'first' | 'last') => {
       if (hasFocus) {
         switch (direction) {
           case 'next':
-            activeItemIndex.current = Math.min(
-              activeItemIndex.current + 1,
-              items.length - 1,
-            );
+            activeItemIndex.current = Math.min(activeItemIndex.current + 1, items.length - 1);
             onNext?.();
             break;
           case 'previous':
-            activeItemIndex.current = Math.max(
-              activeItemIndex.current - 1,
-              0,
-            );
+            activeItemIndex.current = Math.max(activeItemIndex.current - 1, 0);
             onPrevious?.();
             break;
           case 'first':
@@ -121,33 +117,32 @@ const Timeline: React.FC<TimelineModel> = ({
             activeItemIndex.current = items.length - 1;
             onLast?.();
             break;
-          default:
-            break;
         }
       }
     },
-    [hasFocus, onNext, onPrevious, onFirst, onLast],
+    [hasFocus, onNext, onPrevious, onFirst, onLast, items.length],
   );
 
+  // useCallback for handling key selection
   const handleKeySelection = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       const { key } = event;
 
-      if (mode === 'HORIZONTAL' && key === 'ArrowRight') {
-        flipLayout ? handleNavigation('previous') : handleNavigation('next');
-      } else if (mode === 'HORIZONTAL' && key === 'ArrowLeft') {
-        flipLayout ? handleNavigation('next') : handleNavigation('previous');
-      } else if (
-        (mode === 'VERTICAL' || mode === 'VERTICAL_ALTERNATING') &&
-        key === 'ArrowDown'
-      ) {
-        handleNavigation('next');
-      } else if (
-        (mode === 'VERTICAL' || mode === 'VERTICAL_ALTERNATING') &&
-        key === 'ArrowUp'
-      ) {
-        handleNavigation('previous');
-      } else if (key === 'Home') {
+      if (mode === 'HORIZONTAL') {
+        if (key === 'ArrowRight') {
+          flipLayout ? handleNavigation('previous') : handleNavigation('next');
+        } else if (key === 'ArrowLeft') {
+          flipLayout ? handleNavigation('next') : handleNavigation('previous');
+        }
+      } else if (mode === 'VERTICAL' || mode === 'VERTICAL_ALTERNATING') {
+        if (key === 'ArrowDown') {
+          handleNavigation('next');
+        } else if (key === 'ArrowUp') {
+          handleNavigation('previous');
+        }
+      }
+
+      if (key === 'Home') {
         handleNavigation('first');
       } else if (key === 'End') {
         handleNavigation('last');
@@ -156,18 +151,15 @@ const Timeline: React.FC<TimelineModel> = ({
     [handleNavigation, mode, flipLayout],
   );
 
+  // useCallback for handling timeline item clicks
   const handleTimelineItemClick = useCallback(
     (itemId?: string, isSlideShow?: boolean) => {
-      if (itemId) {
-        for (let idx = 0; idx < items.length; idx++) {
-          if (items[idx].id === itemId) {
-            activeItemIndex.current = idx;
-            if (isSlideShow && idx < items.length - 1) {
-              onTimelineUpdated?.(idx + 1);
-            } else {
-              onTimelineUpdated?.(idx);
-            }
-            break;
+      if (!isInitialRender && itemId) {
+        if (itemId) {
+          const index = items.findIndex((item) => item.id === itemId);
+          if (index !== -1) {
+            activeItemIndex.current = index;
+            onTimelineUpdated?.(isSlideShow && index < items.length - 1 ? index + 1 : index);
           }
         }
       }
@@ -175,7 +167,7 @@ const Timeline: React.FC<TimelineModel> = ({
     [items, onTimelineUpdated],
   );
 
-  // Combined effect for initial setup and updates
+  // useEffect for initial setup and updates
   useEffect(() => {
     const activeItem = items[activeTimelineItem || 0];
 
@@ -194,13 +186,9 @@ const Timeline: React.FC<TimelineModel> = ({
       });
 
       if (mode === 'HORIZONTAL') {
-        const card = horizontalContentRef.current?.querySelector(
-          `#timeline-card-${activeItem.id}`,
-        );
-
+        const card = horizontalContentRef.current?.querySelector(`#timeline-card-${activeItem.id}`);
         const cardRect = card?.getBoundingClientRect();
-        const contentRect =
-          horizontalContentRef.current?.getBoundingClientRect();
+        const contentRect = horizontalContentRef.current?.getBoundingClientRect();
 
         if (cardRect && contentRect) {
           const { width: cardWidth, left: cardLeft } = cardRect;
@@ -208,96 +196,79 @@ const Timeline: React.FC<TimelineModel> = ({
           setTimeout(() => {
             const ele = horizontalContentRef.current as HTMLElement;
             ele.style.scrollBehavior = 'smooth';
-            ele.scrollLeft +=
-              cardLeft - contentLeft + cardWidth / 2 - contentWidth / 2;
+            ele.scrollLeft += cardLeft - contentLeft + cardWidth / 2 - contentWidth / 2;
           }, 100);
         }
       }
     }
-  }, [activeTimelineItem, items.length, slideShowRunning, onItemSelected]);
+  }, [activeTimelineItem, items, slideShowRunning, onItemSelected, mode]);
 
+  // useEffect for scrolling to new offset
   useEffect(() => {
     const ele = timelineMainRef.current;
-    if (!ele) {
-      return;
-    }
-    if (mode === 'HORIZONTAL') {
-      ele.scrollLeft = Math.max(newOffSet, 0);
-    } else {
-      ele.scrollTop = newOffSet;
+    if (ele) {
+      if (mode === 'HORIZONTAL') {
+        ele.scrollLeft = Math.max(newOffSet, 0);
+      } else {
+        ele.scrollTop = newOffSet;
+      }
     }
   }, [newOffSet, mode]);
 
+
+  // useEffect for setting up intersection observer for vertical modes
   useEffect(() => {
     const ele = timelineMainRef.current;
-    if (!ele) {
-      return;
-    }
-    // setup observer for the timeline elements
-    setTimeout(() => {
-      const childElements = ele.querySelectorAll('.vertical-item-row');
-      Array.from(childElements).forEach((elem) => {
-        if (observer.current) {
-          observer.current.observe(elem);
-        }
-      });
-    }, 0);
+    if (!ele || mode === 'HORIZONTAL') return;
 
     const toggleMedia = (elem: HTMLElement, state: string) => {
-      elem
-        .querySelectorAll('img,video')
-        .forEach(
-          (ele) =>
-          ((ele as HTMLElement).style.visibility =
-            state === 'hide' ? 'hidden' : 'visible'),
-        );
+      elem.querySelectorAll('img,video').forEach((ele) => {
+        (ele as HTMLElement).style.visibility = state === 'hide' ? 'hidden' : 'visible';
+      });
     };
 
-    if (mode !== 'HORIZONTAL') {
-      observer.current = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            const element = entry.target as HTMLDivElement;
-            if (entry.isIntersecting) {
-              // show img and video when visible.
-              toggleMedia(element, 'show');
-            } else {
-              // hide img and video when not visible.
-              toggleMedia(element, 'hide');
-              // pause YouTube embeds
-              element.querySelectorAll('iframe').forEach((element) => {
-                element.contentWindow?.postMessage(
-                  '{"event":"command","func":"stopVideo","args":""}',
-                  '*',
-                );
-              });
-            }
-          });
-        },
-        {
-          root: timelineMainRef.current,
-          threshold: 0,
-        },
-      );
-    }
+    observer.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const element = entry.target as HTMLDivElement;
+          if (entry.isIntersecting) {
+            toggleMedia(element, 'show');
+          } else {
+            toggleMedia(element, 'hide');
+            element.querySelectorAll('iframe').forEach((element) => {
+              element.contentWindow?.postMessage(
+                '{"event":"command","func":"stopVideo","args":""}',
+                '*',
+              );
+            });
+          }
+        });
+      },
+      {
+        root: timelineMainRef.current,
+        threshold: 0,
+      },
+    );
+
+    const childElements = ele.querySelectorAll('.vertical-item-row');
+    Array.from(childElements).forEach((elem) => {
+      observer.current?.observe(elem);
+    });
 
     return () => {
-      if (observer.current) {
-        observer.current.disconnect();
-      }
+      observer.current?.disconnect();
     };
   }, [mode]);
 
-  const handleScroll = useCallback(
-    (scroll: Partial<Scroll>) => {
-      const element = timelineMainRef.current;
-      if (element) {
-        setNewOffset(element, scroll);
-      }
-    },
-    [],
-  );
+  // useCallback for handling scroll events
+  const handleScroll = useCallback((scroll: Partial<Scroll>) => {
+    const element = timelineMainRef.current;
+    if (element) {
+      setNewOffset(element, scroll);
+    }
+  }, []);
 
+  // useCallback for handling key down events
   const handleKeyDown = useCallback(
     (evt: React.KeyboardEvent<HTMLDivElement>) => {
       if (!disableNavOnKey && !slideShowRunning) {
@@ -308,23 +279,20 @@ const Timeline: React.FC<TimelineModel> = ({
     [disableNavOnKey, slideShowRunning, handleKeySelection],
   );
 
+  // useCallback for handling timeline mode updates
   const handleTimelineUpdate = useCallback(
     (mode: string) => {
-      if (mode === 'VERTICAL') {
-        setTimelineMode('VERTICAL');
-      } else if (mode === 'HORIZONTAL') {
-        setTimelineMode('HORIZONTAL');
-        updateHorizontalAllCards?.(false);
-      } else if (mode === 'VERTICAL_ALTERNATING') {
-        setTimelineMode('VERTICAL_ALTERNATING');
-      } else if (mode === 'HORIZONTAL_ALL') {
-        setTimelineMode('HORIZONTAL_ALL');
+      setTimelineMode(mode as 'HORIZONTAL' | 'VERTICAL' | 'VERTICAL_ALTERNATING' | 'HORIZONTAL_ALL');
+      if (mode === 'HORIZONTAL_ALL') {
         updateHorizontalAllCards?.(true);
+      } else if (mode === 'HORIZONTAL') {
+        updateHorizontalAllCards?.(false);
       }
     },
     [updateHorizontalAllCards],
   );
 
+  // useMemo for calculating wrapper class names
   const wrapperClass = useMemo(() => {
     return cls(mode.toLocaleLowerCase(), {
       'focus-visible': !isChild,
@@ -332,6 +300,7 @@ const Timeline: React.FC<TimelineModel> = ({
     });
   }, [mode, isChild]);
 
+  // useMemo for determining if the toolbar can be shown
   const canShowToolbar = useMemo(() => {
     return !disableToolbar && !isChild;
   }, [disableToolbar, isChild]);
@@ -339,19 +308,13 @@ const Timeline: React.FC<TimelineModel> = ({
   return (
     <Wrapper
       onKeyDown={handleKeyDown}
-      className={`${wrapperClass}`}
+      className={wrapperClass}
       cardPositionHorizontal={cardPositionHorizontal}
-      onMouseDown={() => {
-        setHasFocus(true);
-      }}
-      onKeyUp={(evt) => {
-        if (evt.key === 'Escape') {
-          onPaused?.();
-        }
-      }}
+      onMouseDown={() => setHasFocus(true)}
+      onKeyUp={(evt) => evt.key === 'Escape' && onPaused?.()}
       {...rest}
     >
-      {canShowToolbar ? (
+      {canShowToolbar && (
         <ToolbarWrapper position={toolbarPosition}>
           <TimelineToolbar
             activeTimelineItem={activeTimelineItem}
@@ -366,7 +329,7 @@ const Timeline: React.FC<TimelineModel> = ({
             darkMode={darkMode}
             toggleDarkMode={toggleDarkMode}
             onPaused={onPaused}
-            id={id.current}
+            id={timelineId}
             flipLayout={flipLayout}
             items={items}
             onActivateTimelineItem={handleTimelineItemClick}
@@ -375,7 +338,8 @@ const Timeline: React.FC<TimelineModel> = ({
             mode={timelineMode}
           />
         </ToolbarWrapper>
-      ) : null}
+      )}
+
       <TimelineMainWrapper
         ref={timelineMainRef}
         $scrollable={canScrollTimeline}
@@ -391,21 +355,19 @@ const Timeline: React.FC<TimelineModel> = ({
 
           if (mode === 'VERTICAL' || mode === 'VERTICAL_ALTERNATING') {
             scrolled = target.scrollTop + target.clientHeight;
-
             if (target.scrollHeight - scrolled < 1) {
               onScrollEnd?.();
             }
           } else {
             scrolled = target.scrollLeft + target.offsetWidth;
-
             if (target.scrollWidth === scrolled) {
               onScrollEnd?.();
             }
           }
         }}
       >
-        {/* VERTICAL ALTERNATING */}
-        {timelineMode === 'VERTICAL_ALTERNATING' ? (
+        {/* Render based on timelineMode */}
+        {timelineMode === 'VERTICAL_ALTERNATING' && (
           <TimelineVertical
             activeTimelineItem={activeTimelineItem}
             autoScroll={handleScroll}
@@ -415,18 +377,15 @@ const Timeline: React.FC<TimelineModel> = ({
             items={items as TimelineCardModel[]}
             mode={timelineMode}
             onClick={handleTimelineItemClick}
-            onElapsed={(itemId?: string) =>
-              handleTimelineItemClick(itemId, true)
-            }
+            onElapsed={(itemId?: string) => handleTimelineItemClick(itemId, true)}
             onOutlineSelection={onOutlineSelection}
             slideShowRunning={slideShowRunning}
             theme={theme}
             nestedCardHeight={nestedCardHeight}
           />
-        ) : null}
+        )}
 
-        {/* HORIZONTAL */}
-        {timelineMode === 'HORIZONTAL' || timelineMode === 'HORIZONTAL_ALL' ? (
+        {(timelineMode === 'HORIZONTAL' || timelineMode === 'HORIZONTAL_ALL') && (
           <TimelineMain className={mode.toLowerCase()}>
             <Outline color={theme && theme.primary} height={lineWidth} />
             <TimelineHorizontal
@@ -437,18 +396,15 @@ const Timeline: React.FC<TimelineModel> = ({
               iconChildren={iconChildren}
               items={items as TimelineCardModel[]}
               mode={timelineMode}
-              onElapsed={(itemId?: string) =>
-                handleTimelineItemClick(itemId, true)
-              }
+              onElapsed={(itemId?: string) => handleTimelineItemClick(itemId, true)}
               slideShowRunning={slideShowRunning}
-              wrapperId={id.current}
+              wrapperId={timelineId}
               nestedCardHeight={nestedCardHeight}
             />
           </TimelineMain>
-        ) : null}
+        )}
 
-        {/* VERTICAL */}
-        {timelineMode === 'VERTICAL' ? (
+        {timelineMode === 'VERTICAL' && (
           <TimelineVertical
             activeTimelineItem={activeTimelineItem}
             alternateCards={false}
@@ -459,18 +415,17 @@ const Timeline: React.FC<TimelineModel> = ({
             items={items as TimelineCardModel[]}
             mode={mode}
             onClick={handleTimelineItemClick}
-            onElapsed={(itemId?: string) =>
-              handleTimelineItemClick(itemId, true)
-            }
+            onElapsed={(itemId?: string) => handleTimelineItemClick(itemId, true)}
             onOutlineSelection={onOutlineSelection}
             slideShowRunning={slideShowRunning}
             theme={theme}
             nestedCardHeight={nestedCardHeight}
           />
-        ) : null}
+        )}
       </TimelineMainWrapper>
+
       <TimelineContentRender
-        id={id.current}
+        id={timelineId}
         $showAllCards={showAllCardsHorizontal}
         ref={horizontalContentRef}
       />
